@@ -1,0 +1,26 @@
+# Local build toolchain / package caches (large, machine-specific)
+.dotnet/
+.dotnet_home/
+.nuget/
+.cache/
+.appdata/
+
+# Build output
+**/bin/
+**/obj/
+
+# Runtime history (contains local device serial numbers / timestamps)
+dist/7HUBs/data/
+data/
+
+# Debug artifacts
+*.pdb
+startup-error.log
+__pycache__/
+*.pyc
+
+# IDE / OS
+.vs/
+*.user
+Thumbs.db
+desktop.ini

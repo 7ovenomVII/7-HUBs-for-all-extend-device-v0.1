@@ -1,0 +1,473 @@
+<Window x:Class="SevenHubs.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        xmlns:conv="clr-namespace:SevenHubs.Converters"
+        Title="7 HUBs"
+        Width="1200"
+        Height="700"
+        MinWidth="920"
+        MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize"
+        Background="#0B0D12"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        StateChanged="Window_StateChanged">
+
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="6"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:BatteryBrushConverter x:Key="BatteryBrush" />
+        <conv:ConnectionBrushConverter x:Key="ConnectionBrush" />
+        <conv:StatusBrushConverter x:Key="StatusBrush" />
+        <conv:EmptyStringToVisibilityConverter x:Key="EmptyToVis" />
+        <conv:InverseBooleanConverter x:Key="InverseBool" />
+
+        <GroupStyle x:Key="DeviceGroupStyle">
+            <GroupStyle.HeaderTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Margin="2,10,0,8">
+                        <TextBlock Text="{Binding Name}"
+                                   Foreground="#AEB6C8" FontSize="11" FontWeight="SemiBold" />
+                        <Border Background="#1A2030" CornerRadius="7" Padding="6,1" Margin="7,0,0,0">
+                            <TextBlock Text="{Binding ItemCount}" Foreground="#7F879B" FontSize="9.5" />
+                        </Border>
+                    </StackPanel>
+                </DataTemplate>
+            </GroupStyle.HeaderTemplate>
+            <GroupStyle.Panel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </GroupStyle.Panel>
+        </GroupStyle>
+
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Margin" Value="4,0,0,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#AEB6C8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontFamily" Value="Segoe UI Symbol" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="9">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1E2433" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2A3142" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CardButton" TargetType="Button">
+            <Setter Property="Background" Value="#151922" />
+            <Setter Property="BorderBrush" Value="#232A3A" />
+            <Setter Property="Foreground" Value="#EDF0F6" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="15" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="16"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1B2130" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#3B4562" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#202838" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BatteryBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="5" />
+            <Setter Property="Maximum" Value="100" />
+            <Setter Property="Background" Value="#2A3040" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="2.5" />
+                            <Border x:Name="PART_Indicator"
+                                    HorizontalAlignment="Left"
+                                    Background="{TemplateBinding Foreground}"
+                                    CornerRadius="2.5" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="DeviceCard">
+            <Button Width="248" Height="150" Margin="0,0,14,14"
+                    Style="{StaticResource CardButton}"
+                    Click="Card_Click">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="36" Height="36" CornerRadius="10" Background="#222838">
+                            <TextBlock Text="{Binding Glyph}"
+                                       FontSize="18"
+                                       Foreground="#E8EBF2"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}"
+                                       Foreground="#EDF0F6"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                <TextBlock Text="{Binding Vendor}"
+                                           Foreground="#7F879B"
+                                           FontSize="10.5"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="·" Foreground="#4E5668" FontSize="10.5" Margin="5,0" />
+                                <TextBlock Text="{Binding Kind}"
+                                           Foreground="#7F879B"
+                                           FontSize="10.5" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding BatteryText}"
+                                       Foreground="{Binding Battery, Converter={StaticResource BatteryBrush}}"
+                                       FontSize="30"
+                                       FontWeight="Bold" />
+                            <TextBlock Text="{Binding BatteryCaption}"
+                                       Foreground="#7F879B"
+                                       FontSize="10.5"
+                                       VerticalAlignment="Bottom"
+                                       Margin="6,0,0,5" />
+                        </StackPanel>
+                        <ProgressBar Value="{Binding Battery, TargetNullValue=0}"
+                                     Style="{StaticResource BatteryBar}"
+                                     Foreground="{Binding Battery, Converter={StaticResource BatteryBrush}}"
+                                     Visibility="{Binding HasBattery, Converter={StaticResource BoolToVis}}"
+                                     Margin="0,6,0,0" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="2">
+                        <Border HorizontalAlignment="Left" Background="#1A2030" CornerRadius="7" Padding="7,3">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6"
+                                         Fill="{Binding Connection, Converter={StaticResource ConnectionBrush}}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,5,0" />
+                                <TextBlock Text="{Binding ConnectionText}" Foreground="#AAB2C4" FontSize="10" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="{Binding StatusText}"
+                                   Foreground="{Binding Connected, Converter={StaticResource StatusBrush}}"
+                                   FontSize="10"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
+            </Button>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 自定义标题栏 -->
+        <Border Grid.Row="0" Background="#0E1118" BorderBrush="#1E2432" BorderThickness="0,0,0,1"
+                MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid Margin="22,0,14,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="#7C5CFF">
+                        <TextBlock Text="7H" Foreground="White" FontSize="13" FontWeight="Bold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="7 HUBs" Foreground="#F4F6FA" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="外设状态中心" Foreground="#6F778A" FontSize="10" Margin="0,2,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding LastScanText}" Foreground="#6F778A" FontSize="10.5"
+                               VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <Button Style="{StaticResource IconButton}"
+                            IsEnabled="{Binding IsRefreshing, Converter={StaticResource InverseBool}}"
+                            ToolTip="立即刷新"
+                            Click="Refresh_Click">
+                        <TextBlock Text="↻" FontSize="16" />
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" ToolTip="最小化" Click="Minimize_Click">
+                        <TextBlock Text="—" FontSize="13" />
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" ToolTip="最大化" Click="Maximize_Click">
+                        <TextBlock Text="□" FontSize="13" />
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" ToolTip="隐藏到托盘" Click="Close_Click">
+                        <TextBlock Text="✕" FontSize="13" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 主内容 -->
+        <Grid Grid.Row="1" Margin="24,18,24,22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer Grid.Column="0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Padding="0,0,16,0"
+                          PanningMode="VerticalOnly">
+                <StackPanel>
+                    <Grid Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="我的设备" Foreground="#F2F4F8" FontSize="20" FontWeight="Bold" />
+                            <TextBlock Text="已连接的外设会实时更新电量与连接状态"
+                                       Foreground="#7F879B" FontSize="11" Margin="0,5,0,0" />
+                        </StackPanel>
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Center"
+                                Background="#151922" BorderBrush="#232A3A" BorderThickness="1"
+                                CornerRadius="10" Padding="12,7">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Fill="#31D0AA" VerticalAlignment="Center" Margin="0,0,7,0" />
+                                <TextBlock Text="{Binding ConnectedSummary}" Foreground="#B8C0D0" FontSize="10.5" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding ConnectedView}"
+                                  ItemTemplate="{StaticResource DeviceCard}">
+                        <ItemsControl.GroupStyle>
+                            <StaticResource ResourceKey="DeviceGroupStyle" />
+                        </ItemsControl.GroupStyle>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <Border Background="#12151D" BorderBrush="#232A3A" BorderThickness="1"
+                            CornerRadius="16" Padding="22" Margin="0,0,14,0"
+                            Visibility="{Binding HasNoConnected, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Text="暂时没有已连接设备" Foreground="#C7CCDA" FontSize="13" />
+                            <TextBlock Text="打开设备电源或重新插上接收器，7 HUBs 会自动扫描。"
+                                       Foreground="#6F778A" FontSize="11" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Visibility="{Binding HasDisconnected, Converter={StaticResource BoolToVis}}"
+                                Margin="0,20,0,0">
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="未连接" Foreground="#AEB6C8" FontSize="14" FontWeight="SemiBold" />
+                            <TextBlock Text="保留最后一次电量与在线时间"
+                                       Foreground="#626B7E" FontSize="10.5"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding DisconnectedView}"
+                                      ItemTemplate="{StaticResource DeviceCard}"
+                                      Opacity="0.62">
+                            <ItemsControl.GroupStyle>
+                                <StaticResource ResourceKey="DeviceGroupStyle" />
+                            </ItemsControl.GroupStyle>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 右侧详情 -->
+            <Border Grid.Column="1"
+                    Width="330"
+                    Background="#12151D"
+                    BorderBrush="#232A3A"
+                    BorderThickness="1"
+                    CornerRadius="16"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="42" Height="42" CornerRadius="12" Background="#222838">
+                                    <TextBlock Text="{Binding SelectedDevice.Glyph}" FontSize="20"
+                                               Foreground="#E8EBF2"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Margin="11,0,0,0" VerticalAlignment="Center" MaxWidth="210">
+                                    <TextBlock Text="{Binding SelectedDevice.Name}" Foreground="#F2F4F8"
+                                               FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding SelectedDevice.Vendor}" Foreground="#7F879B"
+                                               FontSize="10.5" Margin="0,3,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Style="{StaticResource IconButton}" HorizontalAlignment="Right"
+                                    VerticalAlignment="Top" ToolTip="关闭详情" Click="CloseDetail_Click">
+                                <TextBlock Text="✕" FontSize="11" />
+                            </Button>
+                        </Grid>
+
+                        <Border Background="#181C26" CornerRadius="12" Padding="14" Margin="0,16,0,0">
+                            <StackPanel>
+                                <Grid>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding SelectedDevice.BatteryCaption}"
+                                                   Foreground="#7F879B" FontSize="10.5" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                            <TextBlock Text="{Binding SelectedDevice.BatteryText}"
+                                                       Foreground="{Binding SelectedDevice.Battery, Converter={StaticResource BatteryBrush}}"
+                                                       FontSize="32" FontWeight="Bold" />
+                                            <TextBlock Text="{Binding SelectedDevice.BatterySuffix}" Foreground="#6F778A" FontSize="10.5"
+                                                       VerticalAlignment="Bottom" Margin="0,0,0,6" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                                            Background="#1A2030" CornerRadius="7" Padding="7,3">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="6" Height="6"
+                                                     Fill="{Binding SelectedDevice.Connection, Converter={StaticResource ConnectionBrush}}"
+                                                     VerticalAlignment="Center" Margin="0,0,5,0" />
+                                            <TextBlock Text="{Binding SelectedDevice.ConnectionText}"
+                                                       Foreground="#AAB2C4" FontSize="10" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <ProgressBar Value="{Binding SelectedDevice.Battery, TargetNullValue=0}"
+                                             Style="{StaticResource BatteryBar}"
+                                             Foreground="{Binding SelectedDevice.Battery, Converter={StaticResource BatteryBrush}}"
+                                             Visibility="{Binding SelectedDevice.HasBattery, Converter={StaticResource BoolToVis}}"
+                                             Margin="0,10,0,0" />
+                                <TextBlock Text="{Binding SelectedDevice.StatusText}"
+                                           Foreground="{Binding SelectedDevice.Connected, Converter={StaticResource StatusBrush}}"
+                                           FontSize="10" Margin="0,7,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="设备信息" Foreground="#AEB6C8" FontSize="11" FontWeight="SemiBold"
+                                   Margin="2,18,0,8" />
+
+                        <Grid Margin="2,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="连接方式" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDevice.ConnectionText}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" Margin="0,0,0,7" />
+
+                            <TextBlock Grid.Row="1" Text="产品型号" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDevice.Product, TargetNullValue=—}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right"
+                                       MaxWidth="210" TextTrimming="CharacterEllipsis" Margin="0,0,0,7" />
+
+                            <TextBlock Grid.Row="2" Text="固件版本" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDevice.Firmware, TargetNullValue=—}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" Margin="0,0,0,7" />
+
+                            <TextBlock Grid.Row="3" Text="当前 DPI" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7"
+                                       Visibility="{Binding SelectedDevice.IsMouse, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Grid.Row="3" Grid.Column="1"
+                                       Text="{Binding SelectedDevice.Dpi, StringFormat={}{0} DPI, TargetNullValue=—}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" Margin="0,0,0,7"
+                                       Visibility="{Binding SelectedDevice.IsMouse, Converter={StaticResource BoolToVis}}" />
+
+                            <TextBlock Grid.Row="4" Text="回报率" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7"
+                                       Visibility="{Binding SelectedDevice.ShowPolling, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Grid.Row="4" Grid.Column="1"
+                                       Text="{Binding SelectedDevice.PollingRate, StringFormat={}{0} Hz, TargetNullValue=—}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" Margin="0,0,0,7"
+                                       Visibility="{Binding SelectedDevice.ShowPolling, Converter={StaticResource BoolToVis}}" />
+
+                            <TextBlock Grid.Row="5" Text="传感器" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7"
+                                       Visibility="{Binding SelectedDevice.IsMouse, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedDevice.Sensor, TargetNullValue=—}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" Margin="0,0,0,7"
+                                       Visibility="{Binding SelectedDevice.IsMouse, Converter={StaticResource BoolToVis}}" />
+
+                            <TextBlock Grid.Row="6" Text="最后在线" Foreground="#6F778A" FontSize="10.5" Margin="0,0,0,7" />
+                            <TextBlock Grid.Row="6" Grid.Column="1"
+                                       Text="{Binding SelectedDevice.LastSeen, StringFormat={}{0:MM-dd HH:mm}}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" Margin="0,0,0,7" />
+
+                            <TextBlock Grid.Row="7" Text="电量更新" Foreground="#6F778A" FontSize="10.5" />
+                            <TextBlock Grid.Row="7" Grid.Column="1"
+                                       Text="{Binding SelectedDevice.BatteryUpdatedAt, StringFormat={}{0:HH:mm:ss}, TargetNullValue=—}"
+                                       Foreground="#D4D9E4" FontSize="10.5" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <TextBlock Text="{Binding SelectedDevice.CapabilityNote}"
+                                   Foreground="#6F778A" FontSize="10" TextWrapping="Wrap"
+                                   LineHeight="16" Margin="2,16,2,0"
+                                   Visibility="{Binding SelectedDevice.CapabilityNote, Converter={StaticResource EmptyToVis}}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
